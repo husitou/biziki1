@@ -513,36 +513,44 @@
     }
 
     // Flashcard
+    let backUpdateTimer = null;
+    function renderCardBack(item) {
+      document.getElementById('card-answer').innerText = item ? item.a : "-";
+      const altBox = document.getElementById('card-alt-answers');
+      const si = document.getElementById('card-status-indicator');
+      if (!item) { altBox.classList.add('hidden'); si.innerHTML = ''; return; }
+      const alts = (item.alt || []).filter(x => !/^[ぁ-ん]+$/.test(x) && x !== item.a);
+      if (alts.length) { altBox.classList.remove('hidden'); altBox.innerText = `（別解: ${alts.join(' / ')}）`; }
+      else altBox.classList.add('hidden');
+      const st = userProgress[item.id];
+      if (st === 'mastered') si.innerHTML = '<span class="bg-emerald-500/30 text-emerald-200 px-3 py-1 rounded-full border border-emerald-400/40"><i class="fa-solid fa-circle-check"></i> 習得済み</span>';
+      else if (st === 'review') si.innerHTML = '<span class="bg-amber-500/30 text-amber-200 px-3 py-1 rounded-full border border-amber-400/40"><i class="fa-solid fa-circle-exclamation"></i> 要復習</span>';
+      else si.innerHTML = '<span class="text-indigo-300">未学習</span>';
+    }
+
     function renderFlashcard() {
+      const wasFlipped = isFlipped;
       document.getElementById('flashcard-inner').classList.remove('is-flipped');
       isFlipped = false;
-      if (cardDeck.length === 0) {
+      clearTimeout(backUpdateTimer);
+
+      const item = cardDeck.length ? cardDeck[cardIndex] : null;
+
+      // 裏面（答え）は、裏返しのアニメーションが終わってから書き換える
+      if (wasFlipped) backUpdateTimer = setTimeout(() => renderCardBack(item), 550);
+      else renderCardBack(item);
+
+      if (!item) {
         document.getElementById('card-question').innerText = "該当する問題がありません";
-        document.getElementById('card-answer').innerText = "-";
         document.getElementById('card-category-tag').innerText = "";
-        document.getElementById('card-alt-answers').classList.add('hidden');
-        document.getElementById('card-status-indicator').innerHTML = '';
         document.getElementById('card-progress-text').innerText = "0 / 0";
         document.getElementById('card-progress-bar').style.width = "0%";
         return;
       }
-      const item = cardDeck[cardIndex];
       document.getElementById('card-question').innerHTML = fmtQ(item.q);
-      document.getElementById('card-answer').innerText = item.a;
       document.getElementById('card-category-tag').innerText = item.category;
-      const altBox = document.getElementById('card-alt-answers');
-      const alts = (item.alt || []).filter(x => !/^[ぁ-ん]+$/.test(x) && x !== item.a);
-      if (alts.length) { altBox.classList.remove('hidden'); altBox.innerText = `（別解: ${alts.join(' / ')}）`; }
-      else altBox.classList.add('hidden');
-
       document.getElementById('card-progress-text').innerText = `問題 ${cardIndex + 1} / ${cardDeck.length}`;
       document.getElementById('card-progress-bar').style.width = `${((cardIndex + 1) / cardDeck.length) * 100}%`;
-
-      const st = userProgress[item.id];
-      const si = document.getElementById('card-status-indicator');
-      if (st === 'mastered') si.innerHTML = '<span class="bg-emerald-500/30 text-emerald-200 px-3 py-1 rounded-full border border-emerald-400/40"><i class="fa-solid fa-circle-check"></i> 習得済み</span>';
-      else if (st === 'review') si.innerHTML = '<span class="bg-amber-500/30 text-amber-200 px-3 py-1 rounded-full border border-amber-400/40"><i class="fa-solid fa-circle-exclamation"></i> 要復習</span>';
-      else si.innerHTML = '<span class="text-indigo-300">未学習</span>';
       updateHeaderBadges();
     }
     function flipCard() { isFlipped = !isFlipped; document.getElementById('flashcard-inner').classList.toggle('is-flipped', isFlipped); }

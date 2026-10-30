@@ -15,6 +15,7 @@
     .rotate-y-180 { transform: rotateY(180deg); }
     .flip-card-inner { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
     .flip-card-inner.is-flipped { transform: rotateY(180deg); }
+    .back-masked #card-answer, .back-masked #card-alt-answers, .back-masked #card-status-indicator { visibility: hidden; }
     .dropdown-menu { opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.98); transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
     .dropdown-menu.is-active { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
     #category-dropdown-menu { max-height: 70vh; overflow-y: auto; }
@@ -529,16 +530,17 @@
     }
 
     function renderFlashcard() {
-      const wasFlipped = isFlipped;
-      document.getElementById('flashcard-inner').classList.remove('is-flipped');
+      const inner = document.getElementById('flashcard-inner');
+      inner.classList.remove('is-flipped');
       isFlipped = false;
       clearTimeout(backUpdateTimer);
 
       const item = cardDeck.length ? cardDeck[cardIndex] : null;
 
-      // 裏面（答え）は、裏返しのアニメーションが終わってから書き換える
-      if (wasFlipped) backUpdateTimer = setTimeout(() => renderCardBack(item), 550);
-      else renderCardBack(item);
+      // 切り替え後の0.6秒間は、裏面（答え）を黒塗りにして隠す
+      inner.classList.add('back-masked');
+      renderCardBack(item);
+      backUpdateTimer = setTimeout(() => inner.classList.remove('back-masked'), 600);
 
       if (!item) {
         document.getElementById('card-question').innerText = "該当する問題がありません";
